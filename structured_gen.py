@@ -1,4 +1,3 @@
-import modal
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List, Dict
@@ -8,15 +7,22 @@ import dotenv
 
 dotenv.load_dotenv()
 
+# OpenRouter client for LLM
 CLIENT = OpenAI(
-    base_url=os.getenv("VLLM_BASE_URL"),
-    api_key=os.getenv("VLLM_TOKEN"),
+    base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
+
+# OpenAI client for embeddings (OpenRouter doesn't support embeddings)
+EMBEDDINGS_CLIENT = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 print("Using base URL:", CLIENT.base_url)
 
-MODELS = CLIENT.models.list()
-DEFAULT_MODEL = MODELS.data[0].id
+# Use a default model or from environment variable
+# OpenRouter supports many models - see https://openrouter.ai/models
+DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct")
 
 print("Using model:", DEFAULT_MODEL)
 
@@ -87,5 +93,9 @@ def regex(
 
 
 def embed(content: str) -> List[float]:
-    f = modal.Function.lookup("self-expansion-embeddings", "embed")
-    return f.remote(content)
+    """Generate embeddings using OpenAI's embedding API."""
+    response = EMBEDDINGS_CLIENT.embeddings.create(
+        model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
+        input=content,
+    )
+    return response.data[0].embedding
