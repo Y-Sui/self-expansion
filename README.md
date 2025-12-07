@@ -1,8 +1,8 @@
 # Self-Expanding Knowledge Graph
 
-The self-expanding knowledge graph is a proof-of-concept built for [an event](https://lu.ma/2jacrv79?tk=yPsIgu_) held jointly by [.txt](https://dottxt.co/), [Modal](https://modal.com/), [Neo4j](https://neo4j.com/), and [Neural Magic](https://neuralmagic.com/). 
+The self-expanding knowledge graph is a proof-of-concept built for [an event](https://lu.ma/2jacrv79?tk=yPsIgu_) held jointly by [.txt](https://dottxt.co/), [Modal](https://modal.com/), [Neo4j](https://neo4j.com/), and [Neural Magic](https://neuralmagic.com/).
 
-This repo demonstrates the use of structured generation via Outlines + vLLM in AI systems engineering. Hopefully the code here inspires you to work on something similar. 
+This repo demonstrates the use of structured generation in AI systems engineering. This version uses [OpenRouter](https://openrouter.ai/) for LLM inference instead of self-hosted Modal infrastructure. Hopefully the code here inspires you to work on something similar. 
 
 See this article for [a writeup](https://devreal.ai/self-expanding-graphs/), or watch [the recording of the talk](https://www.youtube.com/watch?v=xmDf1vZwe_o).
 
@@ -138,7 +138,7 @@ Copy it to `.env` using
 cp .env.template .env
 ```
 
-You'll need to set up two cloud services: the Neo4j Aura database, and Modal for LLM inference. 
+You'll need to set up two cloud services: the Neo4j Aura database and OpenRouter for LLM inference. 
 
 ### Set up Neo4j Aura
 
@@ -150,39 +150,40 @@ You'll need to set up two cloud services: the Neo4j Aura database, and Modal for
 6. Copy the ID displayed in your new instance, usually on the top left. It looks something like `db12345b`.
 7. Set your `NEO4J_URI` in `.env`. Typically, URI's look like `neo4j+s://db12345b.databases.neo4j.io`. Replace `db12345b` with your instance ID.
 
-### Set up Modal
+### Set up OpenRouter
 
-Language model inference in this demo is cloud-native, following best practices of separating inference from the logic of your program. The inference is provided by [Modal](https://modal.com/), though any vLLM server will work.
+Language model inference in this demo uses [OpenRouter](https://openrouter.ai/), which provides unified access to many LLMs through a single API.
 
-To use Modal:
+To use OpenRouter:
+
+1. Go to [OpenRouter](https://openrouter.ai/) and sign up for an account
+2. Navigate to [Keys](https://openrouter.ai/keys) and create a new API key
+3. Copy your API key and set it in your `.env` file as `OPENROUTER_API_KEY`
+4. (Optional) Choose a model from [OpenRouter Models](https://openrouter.ai/models) and set it as `OPENROUTER_MODEL` in your `.env` file
+
+### Set up OpenAI (for embeddings)
+
+This project uses OpenAI's API for generating embeddings (OpenRouter doesn't support embeddings yet).
+
+1. Go to [OpenAI Platform](https://platform.openai.com/) and sign up/login
+2. Navigate to [API Keys](https://platform.openai.com/api-keys) and create a new API key
+3. Copy your API key and set it in your `.env` file as `OPENAI_API_KEY`
+
+Your final `.env` file should look like:
 
 ```bash
-# set environment variables in .env as in .env.example
-pip install -r requirements.txt
-modal setup
-modal run download_llama.py
-modal run modal_embeddings.py  # test run of embedding service
-modal deploy modal_embeddings.py  # deploy embedding service
-modal run modal_vllm_container.py  # test run of llm
-modal deploy modal_vllm_container.py  # deploy llm service
-```
+# Neo4j
+NEO4J_URI=neo4j+s://your-db-id.databases.neo4j.io
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=your-password
 
-After you deploy the LLM service, you'll typically get a printout like:
+# OpenRouter
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct
 
-```
-✓ Created objects.
-├── 🔨 Created mount template_llama3.jinja
-├── 🔨 Created mount /blah/blah/blah/self-expansion/modal_vllm_container.py
-├── 🔨 Created mount PythonPackage:download_llama
-├── 🔨 Created web function serve => https://your-organization-name--self-expansion-vllm-serve.modal.run
-└── 🔨 Created function infer.
-✓ App deployed in 0.925s! 🎉
-```
-
-Set your `VLLM_BASE_URL` to the web function endpoint, and add `/v1` to the end of it:
-
-```
-VLLM_BASE_URL=https://your-organization-name--self-expansion-vllm-serve.modal.run/v1
+# OpenAI (for embeddings)
+OPENAI_API_KEY=sk-...
+EMBEDDING_MODEL=text-embedding-3-small
 ```
 
 ### Running expander
